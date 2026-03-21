@@ -1,0 +1,19 @@
+{
+  "name": "sovereign-analytics",
+  "version": "1.0.0",
+  "description": "Self-hosted, privacy-first web analytics. Your data, your database, $0/month.",
+  "license": "MIT",
+  "keywords": ["analytics", "privacy", "self-hosted", "turso", "sqlite", "vercel", "next.js"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VogtInnovationGroup/sovereign-analytics"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.14.0",
+    "ua-parser-js": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/ua-parser-js": "^0.7.39",
+    "typescript": "^5.0.0"
+  }
+}
