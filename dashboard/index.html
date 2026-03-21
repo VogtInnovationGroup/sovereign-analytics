@@ -5,71 +5,499 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sovereign Analytics Dashboard</title>
   <style>
+    @property --glow-angle {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #070d18; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-    .container { max-width: 1120px; margin: 0 auto; padding: 2rem; }
-    h1 { font-size: 1.5rem; font-weight: 700; color: #fff; }
-    h2 { font-size: 0.8rem; font-weight: 600; color: #fff; margin-bottom: 0.75rem; }
-    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
-    .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-    .btn { font-size: 0.65rem; padding: 5px 10px; border-radius: 5px; cursor: pointer; border: 1px solid rgba(100,116,139,0.3); background: transparent; color: #94a3b8; transition: all 0.2s; }
-    .btn:hover { border-color: rgba(0,212,255,0.3); color: #67e8f9; }
-    .btn-p { border-color: rgba(0,212,255,0.5); color: #67e8f9; background: rgba(0,212,255,0.1); }
-    .btn-p:hover { background: rgba(0,212,255,0.2); }
-    .auth-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-    .auth-box { width: 100%; max-width: 360px; padding: 2rem; }
-    .auth-box input { width: 100%; padding: 10px 14px; font-size: 0.875rem; border-radius: 6px; border: 1px solid rgba(100,116,139,0.3); background: rgba(15,23,42,0.5); color: #fff; margin-bottom: 12px; outline: none; }
-    .auth-box input:focus { border-color: rgba(0,212,255,0.4); }
-    .error { color: #f87171; font-size: 0.8rem; margin-bottom: 0.75rem; }
-    .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 0.6rem; padding: 3px 10px; border-radius: 100px; margin-top: 4px; }
-    .badge-green { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #4ade80; }
-    .badge-green::before { content: '\25CF'; font-size: 6px; }
-    .badge-live { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #f87171; animation: pulse 2s infinite; }
+
+    body {
+      background: #050a12;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── Animated Grid Background ─── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(16,185,129,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(16,185,129,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 60%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 60%, transparent 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── Grid Pulse Animation ─── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(90deg, transparent 0%, rgba(16,185,129,0.03) 50%, transparent 100%);
+      background-size: 200% 100%;
+      animation: grid-pulse 12s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes grid-pulse {
+      0%, 100% { background-position: -100% 0; }
+      50% { background-position: 200% 0; }
+    }
+
+    /* ─── Glow Rotate ─── */
+    @keyframes glow-rotate {
+      from { --glow-angle: 0deg; }
+      to { --glow-angle: 360deg; }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+    }
+
+    @keyframes breathe {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.03); }
+    }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.8); opacity: 1; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
     @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
-    .stats-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.5rem; margin-bottom: 1.5rem; }
-    @media (max-width: 800px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
+
+    /* ─── Atmospheric Glow Orbs ─── */
+    .glow-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .glow-orb-1 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(16,185,129,0.12) 0%, transparent 70%);
+      top: -100px; left: -100px;
+      animation: breathe 8s ease-in-out infinite;
+    }
+    .glow-orb-2 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 70%);
+      bottom: -50px; right: -50px;
+      animation: breathe 10s ease-in-out infinite 2s;
+    }
+    .glow-orb-3 {
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%);
+      top: 40%; left: 60%;
+      animation: breathe 12s ease-in-out infinite 4s;
+    }
+
+    /* ─── Layout ─── */
+    .container { max-width: 1160px; margin: 0 auto; padding: 2rem; position: relative; z-index: 1; }
+
+    /* ─── Typography ─── */
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #059669 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    h2 {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: rgba(148,163,184,0.8);
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+    }
+
+    /* ─── Header ─── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+      animation: fade-in-up 0.6s ease-out;
+    }
+    .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+    /* ─── Buttons ─── */
+    .btn {
+      font-size: 0.65rem;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid rgba(100,116,139,0.2);
+      background: rgba(15,23,42,0.4);
+      color: #94a3b8;
+      transition: all 0.25s ease;
+      backdrop-filter: blur(4px);
+      font-weight: 500;
+    }
+    .btn:hover {
+      border-color: rgba(16,185,129,0.4);
+      color: #34d399;
+      background: rgba(16,185,129,0.05);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(16,185,129,0.1);
+    }
+    .btn-p {
+      border-color: rgba(16,185,129,0.5);
+      color: #34d399;
+      background: linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(5,150,105,0.08) 100%);
+      font-weight: 600;
+    }
+    .btn-p:hover {
+      background: linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(5,150,105,0.15) 100%);
+      box-shadow: 0 4px 16px rgba(16,185,129,0.15);
+    }
+
+    /* ─── Auth Screen ─── */
+    .auth-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+    }
+    .auth-box {
+      width: 100%;
+      max-width: 380px;
+      padding: 2.5rem 2rem;
+      border-radius: 16px;
+      border: 1px solid rgba(16,185,129,0.15);
+      background: rgba(8,14,30,0.6);
+      backdrop-filter: blur(20px);
+      position: relative;
+      animation: fade-in-up 0.8s ease-out;
+    }
+    /* Rotating glow border on auth box */
+    .auth-box::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 17px;
+      padding: 1px;
+      background: conic-gradient(from var(--glow-angle), #10b981, #059669, #f59e0b, #10b981);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: glow-rotate 6s linear infinite;
+      opacity: 0.5;
+    }
+    .auth-box input {
+      width: 100%;
+      padding: 11px 14px;
+      font-size: 0.85rem;
+      border-radius: 8px;
+      border: 1px solid rgba(100,116,139,0.2);
+      background: rgba(15,23,42,0.6);
+      color: #fff;
+      margin-bottom: 12px;
+      outline: none;
+      transition: all 0.25s ease;
+    }
+    .auth-box input:focus {
+      border-color: rgba(16,185,129,0.5);
+      box-shadow: 0 0 0 3px rgba(16,185,129,0.08);
+    }
+    .auth-box input::placeholder { color: #475569; }
+
+    .error { color: #f87171; font-size: 0.8rem; margin-bottom: 0.75rem; }
+
+    /* ─── Badges ─── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.6rem;
+      padding: 4px 12px;
+      border-radius: 100px;
+      margin-top: 6px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+    .badge-sov {
+      background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(5,150,105,0.05) 100%);
+      border: 1px solid rgba(16,185,129,0.25);
+      color: #34d399;
+    }
+    .badge-sov::before { content: '\25C6'; font-size: 5px; }
+    .badge-live {
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.25);
+      color: #f87171;
+      animation: pulse 2s infinite;
+      position: relative;
+    }
+    .badge-live::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #ef4444;
+      display: inline-block;
+      position: relative;
+    }
+    .badge-live::after {
+      content: '';
+      position: absolute;
+      left: 10px; top: 50%;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: rgba(239,68,68,0.4);
+      transform: translateY(-50%);
+      animation: pulse-ring 2s ease-out infinite;
+    }
+
+    /* ─── Stats Grid ─── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
     @media (max-width: 500px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
-    .sc { border: 1px solid rgba(100,116,139,0.12); border-radius: 6px; padding: 10px 8px; text-align: center; background: rgba(8,14,30,0.5); }
-    .sv { font-size: 1.1rem; font-weight: 700; color: #22d3ee; font-family: 'SF Mono', monospace; }
-    .sl { font-size: 0.55rem; color: #64748b; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .card { border: 1px solid rgba(100,116,139,0.12); border-radius: 6px; padding: 16px; background: rgba(8,14,30,0.5); }
+
+    .sc {
+      border: 1px solid rgba(100,116,139,0.08);
+      border-radius: 10px;
+      padding: 12px 8px;
+      text-align: center;
+      background: rgba(8,14,30,0.4);
+      backdrop-filter: blur(8px);
+      transition: all 0.3s ease;
+      animation: fade-in-up 0.5s ease-out both;
+    }
+    .sc:hover {
+      border-color: rgba(16,185,129,0.2);
+      background: rgba(16,185,129,0.03);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(16,185,129,0.06);
+    }
+    .sv {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #34d399;
+      font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+      letter-spacing: -0.02em;
+    }
+    .sl {
+      font-size: 0.5rem;
+      color: #64748b;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 500;
+    }
+
+    /* ─── Cards ─── */
+    .card {
+      border: 1px solid rgba(100,116,139,0.08);
+      border-radius: 12px;
+      padding: 18px;
+      background: rgba(8,14,30,0.4);
+      backdrop-filter: blur(8px);
+      transition: all 0.3s ease;
+    }
+    .card:hover {
+      border-color: rgba(100,116,139,0.15);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+    }
+
     .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem; }
     .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem; }
     .g4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem; }
     @media (max-width: 700px) { .g2,.g3,.g4 { grid-template-columns: 1fr; } }
-    .row { display: flex; justify-content: space-between; font-size: 0.7rem; padding: 3px 0; }
+
+    /* ─── Data Rows ─── */
+    .row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(100,116,139,0.04);
+      transition: background 0.2s;
+    }
+    .row:last-child { border-bottom: none; }
+    .row:hover { background: rgba(16,185,129,0.02); margin: 0 -8px; padding: 4px 8px; border-radius: 4px; }
     .rl { color: #cbd5e1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 6px; }
-    .rv { color: #22d3ee; font-family: monospace; flex-shrink: 0; }
+    .rv { color: #34d399; font-family: 'SF Mono', monospace; flex-shrink: 0; font-weight: 600; }
     .rs { color: #475569; font-size: 0.6rem; margin-left: 4px; }
     .muted { color: #64748b; font-size: 0.7rem; }
-    .chart { display: flex; align-items: flex-end; gap: 2px; height: 100px; }
+
+    /* ─── Traffic Chart ─── */
+    .chart { display: flex; align-items: flex-end; gap: 2px; height: 110px; padding: 4px 0; }
     .cb { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; position: relative; }
-    .bar { width: 100%; border-radius: 2px 2px 0 0; background: rgba(0,212,255,0.5); min-height: 2px; transition: background 0.2s; cursor: default; }
-    .bar:hover { background: rgba(0,212,255,0.8); }
-    .cl { font-size: 5px; color: #475569; margin-top: 2px; }
-    .tt { display: none; position: absolute; bottom: 100%; margin-bottom: 4px; background: #1e293b; border: 1px solid rgba(100,116,139,0.3); border-radius: 4px; padding: 3px 6px; font-size: 0.6rem; color: #fff; white-space: nowrap; z-index: 10; }
+    .bar {
+      width: 100%;
+      border-radius: 3px 3px 0 0;
+      background: linear-gradient(to top, rgba(16,185,129,0.4) 0%, rgba(52,211,153,0.6) 100%);
+      min-height: 2px;
+      transition: all 0.25s ease;
+      cursor: default;
+      position: relative;
+    }
+    .bar:hover {
+      background: linear-gradient(to top, rgba(16,185,129,0.6) 0%, rgba(52,211,153,0.9) 100%);
+      box-shadow: 0 0 12px rgba(16,185,129,0.3);
+    }
+    .cl { font-size: 5px; color: #475569; margin-top: 3px; }
+    .tt {
+      display: none;
+      position: absolute;
+      bottom: 100%;
+      margin-bottom: 6px;
+      background: rgba(15,23,42,0.95);
+      border: 1px solid rgba(16,185,129,0.2);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 0.6rem;
+      color: #fff;
+      white-space: nowrap;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
     .cb:hover .tt { display: block; }
-    .bdr { margin-bottom: 6px; }
-    .bdh { display: flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 2px; }
-    .bdt { width: 100%; height: 5px; border-radius: 100px; background: #0f172a; }
-    .bdf { height: 100%; border-radius: 100px; background: rgba(0,212,255,0.5); }
-    .rr { display: flex; align-items: center; gap: 10px; font-size: 0.7rem; padding: 3px 0; }
-    .rt { color: #475569; font-family: monospace; width: 45px; flex-shrink: 0; font-size: 0.65rem; }
+
+    /* ─── Breakdown Bars ─── */
+    .bdr { margin-bottom: 8px; }
+    .bdh { display: flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 3px; }
+    .bdt { width: 100%; height: 6px; border-radius: 100px; background: rgba(15,23,42,0.6); overflow: hidden; }
+    .bdf {
+      height: 100%;
+      border-radius: 100px;
+      background: linear-gradient(90deg, rgba(16,185,129,0.5) 0%, rgba(52,211,153,0.7) 100%);
+      transition: width 0.5s ease;
+      position: relative;
+    }
+    .bdf::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      background-size: 200% 100%;
+      animation: shimmer 3s ease infinite;
+    }
+
+    /* ─── Recent Views ─── */
+    .rr {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.7rem;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(100,116,139,0.04);
+      transition: all 0.2s;
+    }
+    .rr:last-child { border-bottom: none; }
+    .rr:hover { background: rgba(16,185,129,0.02); margin: 0 -8px; padding: 5px 8px; border-radius: 4px; }
+    .rt { color: #475569; font-family: 'SF Mono', monospace; width: 48px; flex-shrink: 0; font-size: 0.65rem; }
     .rp { color: #cbd5e1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
     .rm { color: #475569; font-size: 0.6rem; flex-shrink: 0; }
-    .hchart { display: flex; align-items: flex-end; gap: 1px; height: 50px; }
-    .hbar { flex: 1; background: rgba(0,212,255,0.3); border-radius: 1px 1px 0 0; min-height: 1px; position: relative; }
-    .hbar:hover { background: rgba(0,212,255,0.7); }
-    .status { display: flex; align-items: center; gap: 8px; font-size: 0.6rem; color: #475569; margin-top: 1.5rem; padding-top: 0.75rem; border-top: 1px solid rgba(100,116,139,0.08); }
-    .dot { width: 5px; height: 5px; border-radius: 50%; background: #22c55e; }
-    .loading { min-height: 100vh; display: flex; align-items: center; justify-content: center; color: #475569; }
+
+    /* ─── Hour Chart ─── */
+    .hchart { display: flex; align-items: flex-end; gap: 1px; height: 55px; }
+    .hbar {
+      flex: 1;
+      background: linear-gradient(to top, rgba(16,185,129,0.2) 0%, rgba(52,211,153,0.4) 100%);
+      border-radius: 2px 2px 0 0;
+      min-height: 1px;
+      position: relative;
+      transition: all 0.2s;
+    }
+    .hbar:hover {
+      background: linear-gradient(to top, rgba(16,185,129,0.4) 0%, rgba(52,211,153,0.8) 100%);
+      box-shadow: 0 0 8px rgba(16,185,129,0.2);
+    }
+
+    /* ─── Status Bar ─── */
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.6rem;
+      color: #475569;
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(100,116,139,0.06);
+    }
+    .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px rgba(16,185,129,0.4);
+    }
+
+    .loading {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #475569;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+    .loading-spinner {
+      width: 24px; height: 24px;
+      border: 2px solid rgba(16,185,129,0.15);
+      border-top-color: #10b981;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── Stagger animation for cards ─── */
+    .card, .sc { animation: fade-in-up 0.5s ease-out both; }
+
+    /* ─── Scrollbar ─── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(100,116,139,0.2); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,0.3); }
   </style>
 </head>
 <body>
+  <!-- Atmospheric glow orbs -->
+  <div class="glow-orb glow-orb-1"></div>
+  <div class="glow-orb glow-orb-2"></div>
+  <div class="glow-orb glow-orb-3"></div>
+
   <div id="app"></div>
   <script>
     // ─── Configuration ───
-    // Set your site URL and dashboard storage key
     let API = localStorage.getItem('sa_api') || '';
     let key = localStorage.getItem('sa_ak') || '';
     let s = null, last = null, ari = null;
@@ -77,19 +505,19 @@
     function render() {
       const a = document.getElementById('app');
       if (!API || !key) { a.innerHTML = authHTML(); return; }
-      if (!s) { a.innerHTML = '<div class="loading">Loading...</div>'; return; }
+      if (!s) { a.innerHTML = '<div class="loading"><div class="loading-spinner"></div><span>Connecting...</span></div>'; return; }
       a.innerHTML = dashHTML();
     }
 
     function authHTML() {
       return `<div class="auth-screen"><div class="auth-box">
-        <h1 style="margin-bottom:4px">Sovereign Analytics</h1>
-        <div class="badge badge-green">Local dashboard &mdash; your data never leaves</div>
+        <h1 style="margin-bottom:6px">Sovereign Analytics</h1>
+        <div class="badge badge-sov">Local dashboard &mdash; your data never leaves</div>
         <p class="muted" style="margin:1.5rem 0 1rem">Connect to your analytics API.</p>
         <div id="ae"></div>
         <input type="url" id="ui" placeholder="Site URL (e.g. https://example.com)" value="${esc(API)}" onkeydown="if(event.key==='Enter')document.getElementById('ki').focus()">
         <input type="password" id="ki" placeholder="Analytics key (ANALYTICS_KEY)" onkeydown="if(event.key==='Enter')auth()">
-        <button class="btn btn-p" onclick="auth()" style="width:100%">Connect</button>
+        <button class="btn btn-p" onclick="auth()" style="width:100%;padding:10px 14px;font-size:0.8rem;border-radius:8px;margin-top:4px">Connect</button>
       </div></div>`;
     }
 
@@ -103,31 +531,31 @@
               <h1>Sovereign Analytics</h1>
               ${s.liveCount > 0 ? `<div class="badge badge-live">${s.liveCount} live now</div>` : ''}
             </div>
-            <div class="badge badge-green">First-party &middot; Self-hosted &middot; Your data</div>
+            <div class="badge badge-sov">First-party &middot; Self-hosted &middot; Your data</div>
           </div>
           <div class="actions">
-            <button class="btn" onclick="exp('csv')">CSV</button>
-            <button class="btn" onclick="exp('json')">JSON</button>
+            <button class="btn" onclick="exp('csv')">Export CSV</button>
+            <button class="btn" onclick="exp('json')">Export JSON</button>
             <button class="btn btn-p" onclick="load()">Refresh</button>
             <button class="btn" onclick="logout()">Disconnect</button>
           </div>
         </div>
         <div class="stats-grid">
-          ${sc('Views',s.totalViews)}${sc('Sessions',s.uniqueSessions)}${sc('Bounce',s.bounceRate+'%')}
-          ${sc('Avg Time',ft(s.avgTimeOnPage))}${sc('Scroll',s.avgScrollDepth+'%')}${sc('Pages/Session',s.pagesPerSession)}
-          ${sc('New Visitors',s.newVisitorRate+'%')}${sc('Pages',s.uniquePaths)}
+          ${sc('Views',fmtn(s.totalViews),1)}${sc('Sessions',fmtn(s.uniqueSessions),2)}${sc('Bounce',s.bounceRate+'%',3)}
+          ${sc('Avg Time',ft(s.avgTimeOnPage),4)}${sc('Scroll',s.avgScrollDepth+'%',5)}${sc('Pages/Session',s.pagesPerSession,6)}
+          ${sc('New Visitors',s.newVisitorRate+'%',7)}${sc('Pages',fmtn(s.uniquePaths),8)}
         </div>
         ${s.viewsByDay.length?`<div class="card" style="margin-bottom:0.75rem">
-          <h2>Traffic (30 days)</h2>
-          <div class="chart">${s.viewsByDay.map(d=>`<div class="cb"><div class="tt">${d.date}: ${d.count}v / ${d.sessions}s</div><div class="bar" style="height:${(d.count/mx)*100}%"></div><div class="cl">${d.date.slice(8)}</div></div>`).join('')}</div>
+          <h2>Traffic &mdash; Last 30 Days</h2>
+          <div class="chart">${s.viewsByDay.map(d=>`<div class="cb"><div class="tt">${d.date}<br>${d.count} views &middot; ${d.sessions} sessions</div><div class="bar" style="height:${(d.count/mx)*100}%"></div><div class="cl">${d.date.slice(8)}</div></div>`).join('')}</div>
         </div>`:''}
         ${(s.viewsByHour||[]).length?`<div class="card" style="margin-bottom:0.75rem">
-          <h2>Traffic by Hour</h2>
-          <div class="hchart">${Array.from({length:24},(_,i)=>{const h=s.viewsByHour.find(x=>x.hour===i);const c=h?h.count:0;return`<div class="hbar" style="height:${c?((c/mxh)*100)+'%':'1px'}" title="${i}:00 — ${c} views"></div>`}).join('')}</div>
-          <div style="display:flex;justify-content:space-between;font-size:0.5rem;color:#475569;margin-top:2px"><span>12am</span><span>6am</span><span>12pm</span><span>6pm</span><span>11pm</span></div>
+          <h2>Traffic by Hour of Day</h2>
+          <div class="hchart">${Array.from({length:24},(_,i)=>{const h=s.viewsByHour.find(x=>x.hour===i);const c=h?h.count:0;return`<div class="hbar" style="height:${c?((c/mxh)*100)+'%':'2px'}" title="${i}:00 — ${c} views"></div>`}).join('')}</div>
+          <div style="display:flex;justify-content:space-between;font-size:0.5rem;color:#475569;margin-top:3px"><span>12am</span><span>6am</span><span>12pm</span><span>6pm</span><span>11pm</span></div>
         </div>`:''}
         <div class="g3">
-          ${tbl('Top Pages',s.topPages.map(p=>({l:p.path,v:p.views,sub:p.avgTime>0?ft(p.avgTime)+' · '+p.avgScroll+'% scroll':''})))}
+          ${tbl('Top Pages',s.topPages.map(p=>({l:p.path,v:p.views,sub:p.avgTime>0?ft(p.avgTime)+' &middot; '+p.avgScroll+'% scroll':''})))}
           ${tbl('Entry Pages',(s.topEntryPages||[]).map(p=>({l:p.path,v:p.count})))}
           ${tbl('Exit Pages',(s.topExitPages||[]).map(p=>({l:p.path,v:p.count})))}
         </div>
@@ -143,25 +571,33 @@
           ${bd('Screens',(s.screenSizes||[]).map(x=>({device:x.size,count:x.count})),s.totalViews)}
         </div>
         ${(s.utmCampaigns||[]).length?`<div class="card" style="margin-bottom:0.75rem"><h2>UTM Campaigns</h2>${s.utmCampaigns.map(c=>`<div class="row"><span class="rl">${esc(c.campaign)} <span class="rs">via ${esc(c.source)}</span></span><span class="rv">${c.views}</span></div>`).join('')}</div>`:''}
-        ${(s.customEvents||[]).length?`<div class="card" style="margin-bottom:0.75rem"><h2>Events</h2>${s.customEvents.map(ev=>`<div class="row"><span class="rl">${esc(ev.name)}</span><span class="rv">${ev.count}</span></div>`).join('')}</div>`:''}
+        ${(s.customEvents||[]).length?`<div class="card" style="margin-bottom:0.75rem"><h2>Custom Events</h2>${s.customEvents.map(ev=>`<div class="row"><span class="rl">${esc(ev.name)}</span><span class="rv">${ev.count}</span></div>`).join('')}</div>`:''}
         <div class="card">
           <h2>Recent Views</h2>
           ${s.recentViews.length===0?'<p class="muted">No views yet</p>':s.recentViews.map(v=>`<div class="rr">
             <span class="rt">${new Date(v.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
             <span class="rp">${esc(v.path)}</span>
-            <span class="rm">${esc(v.device)}·${esc(v.browser)}${v.country?' · '+cc(v.country):''}</span>
+            <span class="rm">${esc(v.device)} &middot; ${esc(v.browser)}${v.country?' &middot; '+cc(v.country):''}</span>
             ${v.referrer!=='(direct)'?`<span class="rm" style="margin-left:auto">via ${esc(v.referrer)}</span>`:''}
           </div>`).join('')}
         </div>
-        <div class="status"><div class="dot"></div><span>Connected to ${esc(API)}</span><span>·</span><span>${last?last.toLocaleTimeString():'—'}</span><span>·</span><span>Auto-refresh: 60s</span></div>
+        <div class="status">
+          <div class="dot"></div>
+          <span>Connected to ${esc(API)}</span>
+          <span style="color:#1e293b">&middot;</span>
+          <span>Last refresh: ${last?last.toLocaleTimeString():'—'}</span>
+          <span style="color:#1e293b">&middot;</span>
+          <span>Auto-refresh: 60s</span>
+        </div>
       </div>`;
     }
 
-    function sc(l,v){return`<div class="sc"><div class="sv">${v}</div><div class="sl">${l}</div></div>`}
+    function sc(l,v,i){return`<div class="sc" style="animation-delay:${i*0.05}s"><div class="sv">${v}</div><div class="sl">${l}</div></div>`}
     function tbl(t,rows){return`<div class="card"><h2>${t}</h2>${!rows.length?'<p class="muted">No data</p>':rows.map(r=>`<div class="row"><span class="rl">${esc(String(r.l))}${r.sub?`<span class="rs">${r.sub}</span>`:''}</span><span class="rv">${r.v}</span></div>`).join('')}</div>`}
-    function bd(t,items,total){return`<div class="card"><h2>${t}</h2>${items.map(i=>{const l=i.device||i.browser||i.os||'?';const p=total>0?Math.round((i.count/total)*100):0;return`<div class="bdr"><div class="bdh"><span style="color:#cbd5e1">${esc(l)}</span><span style="color:#475569">${p}%</span></div><div class="bdt"><div class="bdf" style="width:${p}%"></div></div></div>`}).join('')}</div>`}
+    function bd(t,items,total){return`<div class="card"><h2>${t}</h2>${items.map(i=>{const l=i.device||i.browser||i.os||'?';const p=total>0?Math.round((i.count/total)*100):0;return`<div class="bdr"><div class="bdh"><span style="color:#cbd5e1">${esc(l)}</span><span style="color:#64748b;font-family:monospace;font-size:0.65rem">${p}%</span></div><div class="bdt"><div class="bdf" style="width:${p}%"></div></div></div>`}).join('')}</div>`}
     function cc(code){const flags={'US':'\uD83C\uDDFA\uD83C\uDDF8','GB':'\uD83C\uDDEC\uD83C\uDDE7','CA':'\uD83C\uDDE8\uD83C\uDDE6','DE':'\uD83C\uDDE9\uD83C\uDDEA','FR':'\uD83C\uDDEB\uD83C\uDDF7','AU':'\uD83C\uDDE6\uD83C\uDDFA','IN':'\uD83C\uDDEE\uD83C\uDDF3','BR':'\uD83C\uDDE7\uD83C\uDDF7','JP':'\uD83C\uDDEF\uD83C\uDDF5','MX':'\uD83C\uDDF2\uD83C\uDDFD'};return(flags[code]||'\uD83C\uDF0D')+' '+code}
     function ft(sec){if(!sec)return'0s';if(sec<60)return sec+'s';return Math.floor(sec/60)+'m '+sec%60+'s'}
+    function fmtn(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return String(n)}
     function esc(str){const d=document.createElement('div');d.textContent=str||'';return d.innerHTML}
 
     async function auth(){
@@ -172,7 +608,7 @@
       try{const r=await fetch(`${API}/api/analytics/stats`,{headers:{'Authorization':`Bearer ${key}`}});
       if(!r.ok){if(err)err.innerHTML='<div class="error">Invalid key or unreachable API</div>';key='';return}
       s=await r.json();last=new Date();localStorage.setItem('sa_ak',key);localStorage.setItem('sa_api',API);render();startAR()}
-      catch(ex){if(err)err.innerHTML='<div class="error">Connection failed — check URL and CORS</div>';key=''}
+      catch(ex){if(err)err.innerHTML='<div class="error">Connection failed &mdash; check URL and CORS</div>';key=''}
     }
     async function load(){
       try{const r=await fetch(`${API}/api/analytics/stats`,{headers:{'Authorization':`Bearer ${key}`}});
